@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew(t *testing.T) {
@@ -101,6 +102,29 @@ func TestCurrentBranch(t *testing.T) {
 	assert.NotEmpty(t, b)
 }
 
+func TestLocalBranchExists(t *testing.T) {
+	path := filepath.Join("testdata", "testClone")
+	require.NoError(t, os.MkdirAll(path, os.FileMode(0755)))
+	defer os.RemoveAll("testdata")
+
+	r, err := Clone(path, "https://github.com/fsamin/go-repo.git")
+	require.NoError(t, err)
+
+	exists, hasUpstream := r.LocalBranchExists("tests")
+	assert.False(t, exists)
+	assert.False(t, exists)
+
+	require.NoError(t, r.Checkout("tests"))
+	exists, hasUpstream = r.LocalBranchExists("tests")
+	assert.True(t, exists)
+	assert.True(t, hasUpstream)
+
+	require.NoError(t, r.CheckoutNewBranch("unknown"))
+	exists, hasUpstream = r.LocalBranchExists("unknown")
+	assert.True(t, exists)
+	assert.False(t, hasUpstream)
+}
+
 func TestFetchRemoteBranch(t *testing.T) {
 	path := filepath.Join("testdata", "testClone")
 	assert.NoError(t, os.MkdirAll(path, os.FileMode(0755)))
@@ -117,7 +141,6 @@ func TestFetchRemoteBranch(t *testing.T) {
 	b, err = r.CurrentBranch()
 	assert.NoError(t, err)
 	assert.Equal(t, "master", b)
-
 }
 
 func TestPull(t *testing.T) {
